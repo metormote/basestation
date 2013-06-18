@@ -1,0 +1,40 @@
+package basestation;
+
+message Out
+{
+  optional uint32 batteryLevel=3;
+  optional uint32 packetLoss=4;
+  optional int32 temperature=5;
+
+  message Topology {
+    required uint32 destinationId=1;
+    required uint32 previousId=2;
+  }
+
+  repeated Topology topology=6;
+
+  message Node {
+    required uint32 nodeId=1;
+    required uint64 deviceId=2;
+    
+    enum DeviceType {
+        BASE = 0;
+        MASTER = 1;
+        SLAVE = 2;
+        PHONE = 3;
+      }
+    optional DeviceType deviceType=3;
+  }
+
+  repeated Node node=7;
+}
+
+
+message In
+{
+  optional uint64 time=1;
+  optional uint64 networkId=2;
+  optional uint32 lastTransferSize=3;
+  optional uint32 transferInterval=4;
+}
+
