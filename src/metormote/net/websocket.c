@@ -37,7 +37,7 @@ static int8_t websocket_send_handshake(struct websocket_t *websocket, const char
   p+=sprintf_P(p,PSTR(WEBSOCKET_HANDSHAKE_VERSION));
   p+=sprintf(p, (char *)"\r\n");
   
-  if(websocket->write_socket(websocket->id, (uint8_t *)buf, p-buf)!=STATUS_OK) {
+  if(websocket->write_socket(websocket->id, (uint8_t *)buf, (uint16_t)(p-buf))!=STATUS_OK) {
     status=ERR_TIMEOUT;
   }
   mem_safe_free(buf);
@@ -134,7 +134,7 @@ int8_t websocket_start(struct websocket_t *websocket) {
     return status;
   }
   
-  websocket->state=WEBSOCKET_STATE_CONNECTING;  
+  websocket->state=WEBSOCKET_STATE_CONNECTING;
   
   //read response
   status=websocket_read_until(websocket, WEBSOCKET_HANDSHAKE_RESPONSE);

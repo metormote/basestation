@@ -26,7 +26,7 @@
 //#define BOARD_XOSC_STARTUP_US  500000
 //@}
 
-#define F_CPU   32000000UL
+//#define F_CPU   32000000UL
 
 
 /*! \name Power functions pin mapping

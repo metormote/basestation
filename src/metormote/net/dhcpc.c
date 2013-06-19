@@ -260,7 +260,7 @@ int8_t dhcpc_run(SOCKET s, struct dhcp_config *conf, uint8_t *buf, uint16_t buf_
 
   for(;;) {
     // wait for a tcp/udp packet
-    if(w5200_wait_for_data(s, 0, DHCPC_TIMEOUT)!=STATUS_OK) {
+    if(w5200_wait_for_data(s, 1, DHCPC_TIMEOUT)!=STATUS_OK) {
       w5200_close(s);
       return ERR_TIMEOUT;
     }

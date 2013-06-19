@@ -53,7 +53,7 @@ int8_t dns_resolve(SOCKET s, uint8_t *dns, const char *host_name, uint8_t *ip) {
     }
 
     // wait for a tcp/udp packet
-    if((status=w5200_wait_for_data(s, 0, DNS_TIMEOUT))!=STATUS_OK) {
+    if((status=w5200_wait_for_data(s, 1, DNS_TIMEOUT))!=STATUS_OK) {
       break;
     }
     

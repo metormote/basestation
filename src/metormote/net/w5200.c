@@ -614,6 +614,17 @@ uint8_t w5200_get_socket_interrupt(SOCKET s)
    return w5200_read(W5200_Sn_IR(s));
 }
 
+/**
+@brief set socket interrupt status
+
+These below functions are used to read the Interrupt & Socket Status register
+*/
+void w5200_clear_socket_interrupt(SOCKET s, uint8_t val)
+{
+   w5200_write(W5200_Sn_IR(s), val);
+}
+
+
 
 /**
 @brief   get socket status
@@ -654,10 +665,15 @@ This gives size of received data in receive buffer.
 */
 uint16_t w5200_get_rx_buf_len(SOCKET s)
 {
-  uint16_t len=0;
-  len = w5200_read(W5200_Sn_RX_RSR0(s));
-  len = (len << 8) + w5200_read(W5200_Sn_RX_RSR0(s) + 1);
-  return len;
+  uint16_t len1=1, len2=2;
+  while(len1!=len2) {
+    len1 = w5200_read(W5200_Sn_RX_RSR0(s));
+    len1 = (len1 << 8) + w5200_read(W5200_Sn_RX_RSR0(s) + 1);
+    atomTimerDelay(1);
+    len2 = w5200_read(W5200_Sn_RX_RSR0(s));
+    len2 = (len2 << 8) + w5200_read(W5200_Sn_RX_RSR0(s) + 1);
+  }
+  return len1;
 }
 
 
@@ -758,6 +774,8 @@ This function waits for the until the connection is established.
 */ 
 int8_t w5200_connect(SOCKET s, uint8_t *addr, uint16_t port)
 {
+  int8_t status;
+  
   if(((addr[0] == 0xFF) && (addr[1] == 0xFF) && (addr[2] == 0xFF) && (addr[3] == 0xFF)) ||
      ((addr[0] == 0x00) && (addr[1] == 0x00) && (addr[2] == 0x00) && (addr[3] == 0x00)) ||
      (port == 0x00)) 
@@ -770,6 +788,8 @@ int8_t w5200_connect(SOCKET s, uint8_t *addr, uint16_t port)
       return ERR_TIMEOUT;
     }
     
+    w5200_clear_socket_interrupt(s, 0xFF);
+    
     // set destination IP
     w5200_write(W5200_Sn_DIPR0(s), addr[0]);
     w5200_write((W5200_Sn_DIPR0(s) + 1), addr[1]);
@@ -781,11 +801,21 @@ int8_t w5200_connect(SOCKET s, uint8_t *addr, uint16_t port)
     
     /* wait to process the command... */
     while( w5200_read(W5200_Sn_CR(s)) );
-  
+    
+    /* wait for connect interrupt*/
+    status=ERR_TIMEOUT;
+    while(atomSemGet(&w5200_ir_sem, 5*W5200_TIMEOUT)==ATOM_OK) {
+      if(w5200_get_socket_interrupt(s) & W5200_Sn_IR_CON) {
+        w5200_clear_socket_interrupt(s, 0xFF);
+        status=STATUS_OK;
+        break;
+      }
+    }
+    
     atomMutexPut(&w5200_mutex);
   }
   
-  return STATUS_OK;
+  return status;
 }
 
 
@@ -796,12 +826,26 @@ int8_t w5200_connect(SOCKET s, uint8_t *addr, uint16_t port)
 */ 
 int8_t w5200_disconnect(SOCKET s)
 {
+  int8_t status;
+  
+  w5200_clear_socket_interrupt(s, 0xFF);
+  
   w5200_write(W5200_Sn_CR(s),W5200_Sn_CR_DISCON);
   
   /* wait to process the command... */
   while( w5200_read(W5200_Sn_CR(s)) );
   
-  return STATUS_OK;
+  /* wait for connect interrupt*/
+  status=ERR_TIMEOUT;
+  while(atomSemGet(&w5200_ir_sem, 5*W5200_TIMEOUT)==ATOM_OK) {
+    if(w5200_get_socket_interrupt(s) & W5200_Sn_IR_DISCON) {
+      w5200_clear_socket_interrupt(s, 0xFF);
+      status=STATUS_OK;
+      break;
+    }
+  }
+    
+  return status;
 }
 
 
@@ -879,7 +923,7 @@ int8_t w5200_send(SOCKET s, io_input_stream_t *src, uint16_t *len, uint8_t *ip, 
     w5200_write((W5200_Sn_DIPR0(s) + 2), ip[2]);
     w5200_write((W5200_Sn_DIPR0(s) + 3), ip[3]);
     w5200_write(W5200_Sn_DPORT0(s), (uint8_t)((port & 0xFF00) >> 8));
-    w5200_write((W5200_Sn_DPORT0(s) + 1),(uint8_t)(port & 0x00FF));           
+    w5200_write((W5200_Sn_DPORT0(s) + 1),(uint8_t)(port & 0x00FF));
     //copy data
     w5200_send_data_processing(s, src, *len);
      //send the copied data

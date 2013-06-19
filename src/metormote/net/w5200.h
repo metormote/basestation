@@ -370,6 +370,7 @@ void w5200_set_max_segment_size(SOCKET s, uint16_t mss);
 void w5200_set_ttl(SOCKET s, uint8_t ttl);
 void w5200_set_protocol_field(SOCKET s, uint8_t proto);
 uint8_t w5200_get_socket_interrupt(SOCKET s);
+void w5200_clear_socket_interrupt(SOCKET s, uint8_t val);
 uint8_t w5200_get_socket_status(SOCKET s);
 uint8_t w5200_get_socket_command_reg(SOCKET s);
 

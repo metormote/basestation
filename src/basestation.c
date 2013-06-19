@@ -121,11 +121,11 @@ struct net_options_t NET_OPTIONS = {
 };
 
 struct net_client_socket_options_t NET_CLIENT_OPTIONS = {
-  //.ip = {79, 125, 105, 194},
+  .ip = {79, 125, 105, 194},
   //.ip = {0, 0, 0, 0},
-  //.port = 80,
-  .ip = {192, 168, 0, 172},
-  .port = 3001,
+  .port = 80,
+  //.ip = {192, 168, 0, 172},
+  //.port = 3001,
   .timeout = 20*SYSTEM_TICKS_PER_SEC,
 };
 
@@ -142,7 +142,7 @@ static struct gprs_options GPRS_OPTIONS = {
 static struct websocket_options_t WEBSOCKET_OPTIONS = {
     .path = "/",
     .host = "gw.iop.io",
-    .host = "192.168.0.172",
+    //.host = "192.168.0.172",
     .origin = "0000000000000000"
 };
 
@@ -260,13 +260,13 @@ int basestation_start (void)
       
       //process_status = 0;
 
-      /* Create GPRS thread */
+      /* Create GPRS thread 
       gprs_status = atomThreadCreate(&gprs_tcb,
                     GPRS_THREAD_PRIO, gprs_thread_func, 0,
                     gprs_thread_stack,
                     GPRS_THREAD_STACK_SIZE_BYTES);
-      
-      //gprs_status = 0;
+      */
+      gprs_status = 0;
       
       /* Create websocket thread */
       websocket_status = atomThreadCreate(&websocket_tcb,
@@ -342,9 +342,10 @@ static void websocket_thread_func (uint32_t data)
   }
 }  
 
+int8_t status;
+uint8_t retry_count;
+    
 static int8_t net_websocket_handler () {
-    int8_t status;
-    uint8_t retry_count;
     
     for(retry_count=0;retry_count<3;retry_count++) {
       atomTimerDelay((0x01 << retry_count)*SYSTEM_TICKS_PER_SEC);
@@ -353,7 +354,7 @@ static int8_t net_websocket_handler () {
         break;
       }
     }
-
+/*
     for(retry_count=0;retry_count<3;retry_count++) {
       atomTimerDelay((0x01 << retry_count)*SYSTEM_TICKS_PER_SEC);
     
@@ -361,35 +362,24 @@ static int8_t net_websocket_handler () {
         break;
       }
     }
-
-    //open tcp socket
-    if(net_connect(NET_CLIENT_SOCKET, &NET_CLIENT_OPTIONS)!=STATUS_OK) {
-        return ERR_TIMEOUT;
-    }  
+*/
     
-    //open websocket
+    //init websocket
     memset(&websocket, 0, sizeof(struct websocket_t));
     websocket.id=NET_CLIENT_SOCKET;
     websocket.read_socket=net_receive;
     websocket.write_socket=net_send;
     websocket.on_message=on_message;
     websocket.data_callback=message_data_callback;
-    websocket.options=&WEBSOCKET_OPTIONS;  
+    websocket.options=&WEBSOCKET_OPTIONS;
     
     atomMutexGet(&websocket_mutex, 10*SYSTEM_TICKS_PER_SEC);
     
-    for(;;) {
-      retry_count=0;
-      
-      atomSemPut(&websocket_sem);
-      status=websocket_start(&websocket);
-      atomSemGet(&websocket_sem, -1);
-      net_close(websocket.id);
-      net_clear_buffer(websocket.id);   
-      
-      //try to reopen tcp socket
-      while((status=net_connect(NET_CLIENT_SOCKET, &NET_CLIENT_OPTIONS))!=STATUS_OK) {
-        switch(retry_count++) {
+    for(retry_count=0;retry_count<2;retry_count++) {
+      //open tcp socket
+      status=net_connect(NET_CLIENT_SOCKET, &NET_CLIENT_OPTIONS);
+      if(status!=STATUS_OK) {
+        switch(retry_count) {
           case 0:
             net_close(websocket.id);
             atomTimerDelay(SYSTEM_TICKS_PER_SEC);
@@ -401,13 +391,15 @@ static int8_t net_websocket_handler () {
               atomTimerDelay(SYSTEM_TICKS_PER_SEC);
             net_config(&NET_OPTIONS);
             continue;
-          default:
-            goto exceed_retry_limit;
         }
       }
+      
+      atomSemPut(&websocket_sem);
+      status=websocket_start(&websocket);
+      atomSemGet(&websocket_sem, -1);
+      net_close(websocket.id);
+      net_clear_buffer(websocket.id);
     }
-    
-    exceed_retry_limit:
     
     atomMutexPut(&websocket_mutex);
     
