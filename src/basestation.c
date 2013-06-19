@@ -260,13 +260,13 @@ int basestation_start (void)
       
       //process_status = 0;
 
-      /* Create GPRS thread 
+      /* Create GPRS thread */
       gprs_status = atomThreadCreate(&gprs_tcb,
                     GPRS_THREAD_PRIO, gprs_thread_func, 0,
                     gprs_thread_stack,
                     GPRS_THREAD_STACK_SIZE_BYTES);
-      */
-      gprs_status = 0;
+      
+      //gprs_status = 0;
       
       /* Create websocket thread */
       websocket_status = atomThreadCreate(&websocket_tcb,
@@ -340,12 +340,11 @@ static void websocket_thread_func (uint32_t data)
     atomTimerDelay(SYSTEM_TICKS_PER_SEC);
     
   }
-}  
+}
 
-int8_t status;
-uint8_t retry_count;
-    
 static int8_t net_websocket_handler () {
+    int8_t status;
+    uint8_t retry_count;
     
     for(retry_count=0;retry_count<3;retry_count++) {
       atomTimerDelay((0x01 << retry_count)*SYSTEM_TICKS_PER_SEC);
@@ -354,7 +353,7 @@ static int8_t net_websocket_handler () {
         break;
       }
     }
-/*
+    
     for(retry_count=0;retry_count<3;retry_count++) {
       atomTimerDelay((0x01 << retry_count)*SYSTEM_TICKS_PER_SEC);
     
@@ -362,7 +361,6 @@ static int8_t net_websocket_handler () {
         break;
       }
     }
-*/
     
     //init websocket
     memset(&websocket, 0, sizeof(struct websocket_t));
