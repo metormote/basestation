@@ -304,7 +304,7 @@ archContextSwitch:
     breq .+0x02
     ret
     reti
-
+    cli
 
 /**
  * \b archFirstThreadRestore
