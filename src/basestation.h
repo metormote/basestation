@@ -68,15 +68,14 @@
 #define ANT_THREAD_STACK_SIZE_BYTES         0x200
 #define ANT_THREAD_PRIO                     16
 
-#define PROCESS_THREAD_STACK_SIZE_BYTES     0x260
-#define PROCESS_THREAD_PRIO                 96
-
 #define GPRS_THREAD_STACK_SIZE_BYTES        0x240
 #define GPRS_THREAD_PRIO                    48
 
 #define WEBSOCKET_THREAD_STACK_SIZE_BYTES   0x240
 #define WEBSOCKET_THREAD_PRIO               24
 
+#define PROCESS_THREAD_STACK_SIZE_BYTES     0x260
+#define PROCESS_THREAD_PRIO                 96
 
 #define BASESTATION_OUT_MSG_CODE           16
 #define BASESTATION_IN_MSG_CODE            17

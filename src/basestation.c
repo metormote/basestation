@@ -17,18 +17,18 @@ static uint8_t *idle_thread_stack=(uint8_t *)RAMEND;
 static uint8_t *ant_thread_stack=(uint8_t *)(RAMEND-IDLE_THREAD_STACK_SIZE_BYTES);
 
 /* Process thread's stack area */
-static uint8_t *process_thread_stack=(uint8_t *)(RAMEND-IDLE_THREAD_STACK_SIZE_BYTES
+static uint8_t *websocket_thread_stack=(uint8_t *)(RAMEND-IDLE_THREAD_STACK_SIZE_BYTES
                                                  -ANT_THREAD_STACK_SIZE_BYTES);
 
 /* GPRS thread */
 static uint8_t *gprs_thread_stack=(uint8_t *)(RAMEND-IDLE_THREAD_STACK_SIZE_BYTES
                                                 -ANT_THREAD_STACK_SIZE_BYTES
-                                                -PROCESS_THREAD_STACK_SIZE_BYTES);
+                                                -WEBSOCKET_THREAD_STACK_SIZE_BYTES);
                                                 
 /* Websocket thread */
-static uint8_t *websocket_thread_stack=(uint8_t *)(RAMEND-IDLE_THREAD_STACK_SIZE_BYTES
+static uint8_t *process_thread_stack=(uint8_t *)(RAMEND-IDLE_THREAD_STACK_SIZE_BYTES
                                                   -ANT_THREAD_STACK_SIZE_BYTES
-                                                  -PROCESS_THREAD_STACK_SIZE_BYTES
+                                                  -WEBSOCKET_THREAD_STACK_SIZE_BYTES
                                                   -GPRS_THREAD_STACK_SIZE_BYTES);
 
 
