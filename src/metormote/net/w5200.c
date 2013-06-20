@@ -40,7 +40,7 @@ static uint16_t w5200_read_buf(uint16_t addr, io_output_stream_t *dst, uint16_t 
 static void w5200_write_data(SOCKET s, io_input_stream_t *src, uint8_t *dst, uint16_t len);
 static void w5200_read_data(SOCKET s, uint8_t *src, io_output_stream_t *dst, uint16_t len);
 static void w5200_send_data_processing(SOCKET s, io_input_stream_t *src, uint16_t len);
-
+static int8_t wait_for_interrupt(SOCKET s, uint8_t interrupt);
 
 ISR(W5200_nINT_VECTOR) {
   atomIntEnter();
@@ -621,6 +621,10 @@ These below functions are used to read the Interrupt & Socket Status register
 */
 void w5200_clear_socket_interrupt(SOCKET s, uint8_t val)
 {
+    //reset interrupt semaphore
+    atomSemResetCount(&w5200_ir_sem, 0);
+    
+    //clear socket interrupt register
    w5200_write(W5200_Sn_IR(s), val);
 }
 
@@ -665,6 +669,11 @@ This gives size of received data in receive buffer.
 */
 uint16_t w5200_get_rx_buf_len(SOCKET s)
 {
+  uint16_t len;
+  len = w5200_read(W5200_Sn_RX_RSR0(s));
+  len = (len << 8) + w5200_read(W5200_Sn_RX_RSR0(s) + 1);
+  return len;
+  /*
   uint16_t len1=1, len2=2;
   while(len1!=len2) {
     len1 = w5200_read(W5200_Sn_RX_RSR0(s));
@@ -674,6 +683,7 @@ uint16_t w5200_get_rx_buf_len(SOCKET s)
     len2 = (len2 << 8) + w5200_read(W5200_Sn_RX_RSR0(s) + 1);
   }
   return len1;
+  */
 }
 
 
@@ -803,14 +813,7 @@ int8_t w5200_connect(SOCKET s, uint8_t *addr, uint16_t port)
     while( w5200_read(W5200_Sn_CR(s)) );
     
     /* wait for connect interrupt*/
-    status=ERR_TIMEOUT;
-    while(atomSemGet(&w5200_ir_sem, 5*W5200_TIMEOUT)==ATOM_OK) {
-      if(w5200_get_socket_interrupt(s) & W5200_Sn_IR_CON) {
-        w5200_clear_socket_interrupt(s, 0xFF);
-        status=STATUS_OK;
-        break;
-      }
-    }
+    status=wait_for_interrupt(s, W5200_Sn_IR_CON);
     
     atomMutexPut(&w5200_mutex);
   }
@@ -836,15 +839,8 @@ int8_t w5200_disconnect(SOCKET s)
   while( w5200_read(W5200_Sn_CR(s)) );
   
   /* wait for connect interrupt*/
-  status=ERR_TIMEOUT;
-  while(atomSemGet(&w5200_ir_sem, 5*W5200_TIMEOUT)==ATOM_OK) {
-    if(w5200_get_socket_interrupt(s) & W5200_Sn_IR_DISCON) {
-      w5200_clear_socket_interrupt(s, 0xFF);
-      status=STATUS_OK;
-      break;
-    }
-  }
-    
+  status=wait_for_interrupt(s, W5200_Sn_IR_CON);
+  
   return status;
 }
 
@@ -939,17 +935,29 @@ int8_t w5200_send(SOCKET s, io_input_stream_t *src, uint16_t *len, uint8_t *ip, 
 }
 
 
+static int8_t wait_for_interrupt(SOCKET s, uint8_t interrupt) {
+  int8_t status;
+
+  /* wait for connect interrupt*/
+  status=ERR_TIMEOUT;
+  while(atomSemGet(&w5200_ir_sem, 5*W5200_TIMEOUT)==ATOM_OK) {
+    if(w5200_get_socket_interrupt(s) & interrupt) {
+      w5200_clear_socket_interrupt(s, 0xFF);
+      status=STATUS_OK;
+      break;
+    }
+  }
+  
+  return status;
+}
+
 int8_t w5200_wait_for_data(SOCKET s, uint16_t len, int32_t timeout) {
   
   while(w5200_get_rx_buf_len(s)<len) {
     
-    atomSemResetCount(&w5200_ir_sem, 0);
-    
-    //clear socket interrupt register
-    w5200_write(W5200_Sn_IR(s), 0xFF);
-    
-    //wait for interrupt
-    if(atomSemGet(&w5200_ir_sem, timeout)!=STATUS_OK) {
+    w5200_clear_socket_interrupt(s, 0xFF);
+  
+    if(wait_for_interrupt(s, W5200_Sn_IR_RECV)!=STATUS_OK) {
       if(w5200_get_rx_buf_len(s)<len) {
         return ERR_TIMEOUT;
       }
