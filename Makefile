@@ -301,7 +301,7 @@ CXXFLAGS = $(COMMON_FLAGS)
 #             and function names needs to be present in the assembler source
 #             files -- see avr-libc docs [FIXME: not yet described there]
 ASFLAGS = $(COMMON_FLAGS)
-ASFLAGS += -Wa,-adhlns=$(<:.S=.lst),-gstabs
+ASFLAGS += -Wa,-adhlns=$(<:.s=.lst),-gstabs
 
 
 
@@ -789,7 +789,7 @@ LST = $(addsuffix .lst,$(basename $(SRC) $(ASRC)))
 
 # Compiler flags to generate dependency files.
 ### GENDEPFLAGS = -Wp,-M,-MP,-MT,$(*F).o,-MF,.dep/$(@F).d
-GENDEPFLAGS = -MD -MP -MF .dep/$$(@F).d
+GENDEPFLAGS = -MD -MP -MF .dep/$(@F).d
 
 # Combine all necessary flags and optional flags.
 # Add target processor to flags.
@@ -924,7 +924,7 @@ define make-goal-c
 $1/%.o: %.c
 	@echo
 	@echo $(MSG_COMPILING) $$<
-	$(CC) -c $(ALL_CFLAGS) $$< -o $$@
+	$(CC) -c $$(ALL_CFLAGS) $$< -o $$@
 endef
 
 $(foreach bdir,$(SRC_DIR),$(eval $(call make-goal-c,$(bdir))))
@@ -935,7 +935,7 @@ define make-goal-cpp
 $1/%.o : %.cpp
 	@echo
 	@echo $(MSG_COMPILING) $$<
-	$(CXX) -c $(ALL_CXXFLAGS) $$< -o $$@
+	$(CXX) -c $$(ALL_CXXFLAGS) $$< -o $$@
 endef
 
 $(foreach bdir,$(SRC_DIR),$(eval $(call make-goal-cpp,$(bdir))))
@@ -946,7 +946,7 @@ define make-goal-s
 $1/%.o: %.s
 	@echo
 	@echo $(MSG_ASSEMBLING) $$<
-	$(CC) -c $(ALL_ASFLAGS) $$< -o $$@
+	$(CC) -c $$(ALL_ASFLAGS) $$< -o $$@
 endef
 
 $(foreach bdir,$(SRC_DIR),$(eval $(call make-goal-s,$(bdir))))
